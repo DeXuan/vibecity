@@ -115,9 +115,9 @@ def main():
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <meta name="robots" content="index,follow">
-<meta name="description" content="VibeCity 码上创之城：把 CSDN 码上创大赛 410 份投稿项目，程序化生成一座可以走进去的 3D 城市。每项目一栋楼，分类即街区，票数即楼高。">>
+<meta name="description" content="VibeCity 码上创之城：把 CSDN 码上创大赛 411 份投稿项目，程序化生成一座可以走进去的 3D 城市。每项目一栋楼，分类即街区，票数即楼高。">
 <meta name="pv-build-ver" content="__PV_BUILD_VER__">
-<title>VibeCity 码上创之城 · 410 栋灵感之楼</title>
+<title>VibeCity 码上创之城 · __VB_COUNT__ 栋灵感之楼</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f5d9a8'/%3E%3Cstop offset='1' stop-color='%23c96a9e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230b0d16'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle' fill='url(%23g)' font-family='serif'%3E梦%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0d16">
@@ -129,7 +129,7 @@ def main():
 <div id="boot"></div>
 <div id="app" class="hide"></div>
 <canvas id="c"></canvas>
-<noscript><div style="font:14px/1.8 sans-serif;padding:40px;text-align:center">梦笔需要启用 JavaScript。</div></noscript>
+<noscript><div style="font:14px/1.8 sans-serif;padding:40px;text-align:center">VibeCity 需要启用 JavaScript。</div></noscript>
 <script>
 window.PV_BUILD_VER = "__PV_BUILD_VER__";
 """)
@@ -149,7 +149,13 @@ window.PV_BUILD_VER = "__PV_BUILD_VER__";
 </body>
 </html>
 """)
-    html = "".join(parts).replace("__PV_BUILD_VER__", ver)
+    # 动态统计项目数（从 03_data.js 的 "n":" 计数），替换标题占位符
+    data_path = os.path.join(SRC, "03_data.js")
+    count = 0
+    if os.path.exists(data_path):
+        with open(data_path, "r", encoding="utf-8", errors="ignore") as f:
+            count = f.read().count('"n":"')
+    html = "".join(parts).replace("__PV_BUILD_VER__", ver).replace("__VB_COUNT__", str(count or 411))
 
     # 构建后语法校验：失败则抛异常 -> 由 __main__ 捕获并报错退出
     validate_scripts(html)
