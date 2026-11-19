@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <meta name="robots" content="index,follow">
-<meta name="description" content="VibeCity 码上创之城：把 CSDN 码上创大赛 410 份投稿项目，程序化生成一座可以走进去的 3D 城市。每项目一栋楼，分类即街区，票数即楼高。">>
+<meta name="description" content="VibeCity 码上创之城：把 CSDN 码上创大赛 411 份投稿项目，程序化生成一座可以走进去的 3D 城市。每项目一栋楼，分类即街区，票数即楼高。">
 <meta name="pv-build-ver" content="1.0.0">
-<title>VibeCity 码上创之城 · 410 栋灵感之楼</title>
+<title>VibeCity 码上创之城 · 411 栋灵感之楼</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f5d9a8'/%3E%3Cstop offset='1' stop-color='%23c96a9e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230b0d16'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle' fill='url(%23g)' font-family='serif'%3E梦%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0d16">
@@ -18,7 +18,7 @@
 <div id="boot"></div>
 <div id="app" class="hide"></div>
 <canvas id="c"></canvas>
-<noscript><div style="font:14px/1.8 sans-serif;padding:40px;text-align:center">梦笔需要启用 JavaScript。</div></noscript>
+<noscript><div style="font:14px/1.8 sans-serif;padding:40px;text-align:center">VibeCity 需要启用 JavaScript。</div></noscript>
 <script>
 window.PV_BUILD_VER = "1.0.0";
 
@@ -646,7 +646,7 @@ VB.ui.buildBoot = function () {
     <div class="starfield" aria-hidden="true"></div>
     <div class="brand"><h1>VibeCity</h1><em>码上创之城</em></div>
     <div class="tagline">每一份投稿，都是一座楼</div>
-    <div class="stats"><span><b>${data.length}</b>栋灵感之楼</span><span><b>${totalVotes}</b>总人气票</span><span><b>13</b>个主题街区</span></div>
+    <div class="stats"><span><b>${data.length}</b>栋灵感之楼</span><span><b>${totalVotes}</b>总人气票</span><span><b>${new Set(data.map(x => x.c)).size}</b>个主题街区</span></div>
     <div class="inbox">
       <input class="q" id="searchInput" maxlength="30" placeholder="搜项目名，飞到它的楼…" autocomplete="off">
       <div class="row">
@@ -694,7 +694,7 @@ VB.ui.buildHud = function () {
         <button class="ctlbtn" id="homeBtn" title="回到入口">🏠</button>
       </div>
     </div>
-    <div class="corner" id="brandTag"><b>VibeCity</b><span>码上创之城 · 410 栋灵感之楼</span></div>
+    <div class="corner" id="brandTag"><b>VibeCity</b><span id="brandSub">码上创之城</span></div>
     <div class="corner" id="timeBar">
       <span id="todLabel">清晨</span>
       <input type="range" id="todRng" min="0" max="100" value="32" aria-label="时间">
@@ -944,6 +944,12 @@ VB.ui.buildHud = function () {
   cvs.addEventListener("pointerup", e => { if (e.pointerType === "touch") VB.pinchUp(e); });
   cvs.addEventListener("pointercancel", e => { if (e.pointerType === "touch") VB.pinchUp(e); });
   window.addEventListener("resize", () => VB.resize());
+  const bsub = VB.$("#brandSub");
+  if (bsub) {
+    const d = window.VB_DATA || [];
+    const cats = new Set(d.map(x => x.c)).size;
+    bsub.textContent = "码上创之城 · " + d.length + " 栋灵感之楼 · " + cats + " 街区";
+  }
 };
 VB.ui.flyToCategory = function (cat) { VB._flyToCategory(cat); };
 VB.ui.search = function (q) {
