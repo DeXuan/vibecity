@@ -12,7 +12,7 @@ VB.ui.buildBoot = function () {
     <div class="starfield" aria-hidden="true"></div>
     <div class="brand"><h1>VibeCity</h1><em>码上创之城</em></div>
     <div class="tagline">每一份投稿，都是一座楼</div>
-    <div class="stats"><span><b>${data.length}</b>栋灵感之楼</span><span><b>${totalVotes}</b>总人气票</span><span><b>13</b>个主题街区</span></div>
+    <div class="stats"><span><b>${data.length}</b>栋灵感之楼</span><span><b>${totalVotes}</b>总人气票</span><span><b>${new Set(data.map(x => x.c)).size}</b>个主题街区</span></div>
     <div class="inbox">
       <input class="q" id="searchInput" maxlength="30" placeholder="搜项目名，飞到它的楼…" autocomplete="off">
       <div class="row">
@@ -64,7 +64,7 @@ VB.ui.buildHud = function () {
         <button class="ctlbtn" id="homeBtn" title="回到入口">🏠</button>
       </div>
     </div>
-    <div class="corner" id="brandTag"><b>VibeCity</b><span>码上创之城 · 410 栋灵感之楼</span></div>
+    <div class="corner" id="brandTag"><b>VibeCity</b><span id="brandSub">码上创之城</span></div>
     <div class="corner" id="timeBar">
       <span id="todLabel">清晨</span>
       <input type="range" id="todRng" min="0" max="100" value="32" aria-label="时间">
@@ -335,6 +335,14 @@ VB.ui.buildHud = function () {
   cvs.addEventListener("pointerup", e => { if (e.pointerType === "touch") VB.pinchUp(e); });
   cvs.addEventListener("pointercancel", e => { if (e.pointerType === "touch") VB.pinchUp(e); });
   window.addEventListener("resize", () => VB.resize());
+
+  /* 品牌栏副标题：动态项目数与街区数（避免硬编码随数据刷新失真） */
+  const bsub = VB.$("#brandSub");
+  if (bsub) {
+    const d = window.VB_DATA || [];
+    const cats = new Set(d.map(x => x.c)).size;
+    bsub.textContent = "码上创之城 · " + d.length + " 栋灵感之楼 · " + cats + " 街区";
+  }
 };
 
 /* 街区飞行（来自相机模块的延迟挂载） */
