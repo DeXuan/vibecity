@@ -273,9 +273,8 @@ VB.ui.buildHud = function () {
     }
     if (e.code === "Space") e.preventDefault();
   };
-  /* 同时挂 window 与 document：兼容不同派发源（气泡到 document 也能收到） */
+  /* 只挂 window：keydown 从 document 冒泡到 window，注册两处会导致每次按键处理两次 */
   window.addEventListener("keydown", onKeyDown);
-  document.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", e => VB.setKey(e.code, false));
   document.addEventListener("mousemove", e => VB.fpMove(e));
   /* ═══ 移动端虚拟摇杆（漫游模式） ═══ */
@@ -390,17 +389,24 @@ VB.ui.showProj = function (idx) {
   const x = (window.VB_DATA || [])[idx];
   if (!x) return;
   VB.ui._curProj = idx;
+  /* 记录打开前的焦点，关闭时归还（键盘用户不丢位置） */
+  VB.ui._prevFocus = document.activeElement;
   const card = VB.$("#projCard");
   const color = VB_CAT_COLORS[x.c] || "#9aa4b8";
   const DIM_NAMES = ["创意", "完整", "实用", "体验"];
-  /* 四维评分条（无维度数据时降级为综合星级） */
+  /* 四维评分条；无维度数据时降级为综合星级条，避免视觉断层 */
   let dimsHtml = "";
   if (Array.isArray(x.d) && x.d.length === 4) {
     dimsHtml = '<div class="pc-dims">' + x.d.map((v, i) =>
       `<div class="pc-dim"><span>${DIM_NAMES[i]}</span>` +
       `<i class="bar"><b style="width:${Math.max(2, Math.min(100, v / 5 * 100))}%;background:${color}"></b></i>` +
       `<em>${v.toFixed(1)}</em></div>`).join("") + "</div>";
+  } else if (x.r > 0) {
+    dimsHtml = '<div class="pc-dims"><div class="pc-dim"><span>综合</span>' +
+      `<i class="bar"><b style="width:${Math.max(2, Math.min(100, x.r / 5 * 100))}%;background:${color}"></b></i>` +
+      `<em>${(+x.r).toFixed(1)}</em></div></div>`;
   }
+  const isExternal = /^https?:\/\//i.test(x.u || "");
   card.innerHTML = `
     <div class="pc-head"><u style="background:${color}"></u><b>${VB.escapeHtml(x.n)}</b><button id="pcClose" aria-label="关闭">✕</button></div>
     <div class="pc-tag">${VB.escapeHtml(x.t || "")}</div>
@@ -408,12 +414,22 @@ VB.ui.showProj = function (idx) {
     <div class="pc-stats"><i>⭐ ${x.r || 0}</i><i>🎫 ${x.v || 0} 票</i></div>
     ${dimsHtml}
     <div class="pc-actions">
-      ${x.u ? `<a class="pc-link" href="${VB.escapeHtml(x.u)}" target="_blank" rel="noopener">打开作品 ↗</a>` : ""}
+      ${x.u ? `<a class="pc-link" href="${VB.escapeHtml(x.u)}" target="_blank" rel="noopener noreferrer">打开作品 ↗</a>` : ""}
       <button class="pc-copy" id="pcCopy" title="复制定位链接">🔗</button>
-    </div>`;
+    </div>
+    ${isExternal ? '<div class="pc-note">外部作品 · 新窗口打开</div>' : ""}`;
   card.classList.remove("hide");
-  VB.$("#pcClose").addEventListener("click", () => card.classList.add("hide"));
-  /* 复制深链：#项目名 可直接定位到这栋楼 */
+  const closeBtn = VB.$("#pcClose");
+  const close = () => {
+    card.classList.add("hide");
+    /* 归还焦点 */
+    const prev = VB.ui._prevFocus;
+    if (prev && typeof prev.focus === "function") { try { prev.focus(); } catch (e) {} }
+  };
+  closeBtn.addEventListener("click", close);
+  /* 焦点进入卡片，键盘用户可立即操作 */
+  try { closeBtn.focus(); } catch (e) {}
+  /* 复制深链 */
   const copyBtn = VB.$("#pcCopy");
   if (copyBtn) {
     copyBtn.addEventListener("click", () => {
