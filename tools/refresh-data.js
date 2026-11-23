@@ -22,6 +22,18 @@ const API = "https://vb.csdn.net/api/products?all=1";
 const OUT = path.join(__dirname, "..", "src", "03_data.js");
 const DRY = process.argv.includes("--dry-run");
 
+/* 链接归一化：接口返回的相对路径（/apps/xxx/）在静态站会 404，
+   补全上游域名 vb.csdn.net 使其成为可用外链 */
+const UPSTREAM = "https://vb.csdn.net";
+function normalizeUrl(u) {
+  const raw = String(u || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw.slice(0, 200);
+  if (raw.startsWith("//")) return ("https:" + raw).slice(0, 200);
+  if (raw.startsWith("/")) return (UPSTREAM + raw).slice(0, 200);
+  return (UPSTREAM + "/" + raw).slice(0, 200);
+}
+
 const CATS = ["生活", "校园", "游戏", "社交", "健身", "公益", "户外", "K12", "研发", "个人效率", "学习科研", "面试、路演", "纪念代码", "其他"];
 
 function fetchOnce(url, useProxy) {
@@ -118,7 +130,7 @@ function catOf(x) {
       c: catOf(x),
       v: x.voteCount || 0,
       r: avg,
-      u: String(x.url || "").slice(0, 120),
+      u: normalizeUrl(x.url),
       p: x.appPlatformLabel || ""
     };
     /* 四维拆解（创意/完整/实用/体验），全为 0 时不写入以省体积 */
