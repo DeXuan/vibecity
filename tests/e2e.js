@@ -795,6 +795,97 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || "assertion failed
     return st;
   });
 
+  /* ---------- 40. 作品链接 100% 可用（P0 修复） ---------- */
+  await test("40 作品链接全部为可用外链", async () => {
+    const st = await page.evaluate(() => {
+      const d = window.VB_DATA || [];
+      const relative = d.filter(x => (x.u || "").startsWith("/"));
+      const nonHttp = d.filter(x => x.u && !/^https?:\/\//i.test(x.u));
+      const empty = d.filter(x => !x.u);
+      return {
+        total: d.length,
+        relative: relative.length,
+        nonHttp: nonHttp.length,
+        empty: empty.length,
+        sample: d[0] ? d[0].u : null,
+        relSample: relative[0] ? relative[0].n + " → " + relative[0].u : null
+      };
+    });
+    assert(st.relative === 0, "不应有相对路径链接，实际 " + st.relative + " 条，例：" + st.relSample);
+    assert(st.nonHttp === 0, "所有链接应为 http(s)，实际异常 " + st.nonHttp + " 条");
+    assert(/^https?:\/\//i.test(st.sample || ""), "首项链接应为完整 URL");
+    return st;
+  });
+
+  /* ---------- 41. 键盘监听无重复绑定 ---------- */
+  await test("41 键盘监听只绑定一次", async () => {
+    const st = await page.evaluate(() => {
+      /* 通过 setKey 调用计数验证：真实按一次键应只触发一次 */
+      let calls = 0;
+      const orig = VB.setKey;
+      VB.setKey = function (code, down) { calls++; return orig.call(VB, code, down); };
+      window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW", key: "w", bubbles: true }));
+      VB.setKey = orig;
+      return { calls };
+    });
+    // window 与 document 双绑会得到 2
+    assert(st.calls === 1, "单次按键应只调用 setKey 1 次，实际 " + st.calls + " 次（重复绑定）");
+    return st;
+  });
+
+  /* ---------- 42. 项目卡焦点管理与外部链接属性 ---------- */
+  await test("42 项目卡焦点管理与链接安全属性", async () => {
+    await page.evaluate(() => VB.enterCity());
+    await page.waitForTimeout(1200);
+    const st = await page.evaluate(() => {
+      // 找一个有外链的项目
+      const idx = (window.VB_DATA || []).findIndex(x => /^https?:\/\//i.test(x.u || ""));
+      if (idx < 0) return { error: "无外链项目" };
+      VB.ui.showProj(idx);
+      const card = VB.$("#projCard");
+      const closeBtn = VB.$("#pcClose");
+      const link = card.querySelector(".pc-link");
+      const focusedOnOpen = document.activeElement === closeBtn;
+      const relAttr = link ? link.getAttribute("rel") : null;
+      const note = card.querySelector(".pc-note");
+      // 关闭后焦点归还
+      closeBtn.click();
+      const hidden = card.classList.contains("hide");
+      return {
+        focusedOnOpen, relAttr, hasNote: !!note,
+        hidden, hasTarget: link ? link.getAttribute("target") : null
+      };
+    });
+    assert(st.focusedOnOpen, "打开卡片应自动聚焦关闭按钮");
+    assert(st.relAttr === "noopener noreferrer", "外链 rel 应为 noopener noreferrer，实际 " + st.relAttr);
+    assert(st.hasTarget === "_blank", "外链应新窗口打开");
+    assert(st.hasNote, "应提示「外部作品」");
+    assert(st.hidden, "点击关闭应隐藏卡片");
+    return st;
+  });
+
+  /* ---------- 43. 无四维数据时星级降级 ---------- */
+  await test("43 无维度数据降级为综合星级", async () => {
+    const st = await page.evaluate(() => {
+      const d = window.VB_DATA || [];
+      // 找一个无 d 但有 r 的项目
+      const idx = d.findIndex(x => !x.d && x.r > 0);
+      if (idx < 0) return { skipped: true, note: "所有项目均有四维数据" };
+      VB.ui.showProj(idx);
+      const card = VB.$("#projCard");
+      const rows = card.querySelectorAll(".pc-dim");
+      const label = rows[0] ? rows[0].querySelector("span").textContent : null;
+      const barW = rows[0] ? rows[0].querySelector("b").style.width : null;
+      card.classList.add("hide");
+      return { idx, rows: rows.length, label, barW, rating: d[idx].r };
+    });
+    if (st.skipped) return st;
+    assert(st.rows === 1, "应降级为单条综合星级，实际 " + st.rows);
+    assert(st.label === "综合", "标签应为「综合」，实际 " + st.label);
+    assert(/%$/.test(st.barW || ""), "应有进度条宽度");
+    return st;
+  });
+
   /* ---------- 19. 无运行时错误 ---------- */
   await test("19 全程无 JS 运行时错误", async () => {
     const critical = pageErrors.filter(e => !/ResizeObserver|favicon/.test(e));
